@@ -3,28 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visitor IP Address</title>
-</head>
-<body>
-    <h1>Visitor IP Address</h1>
-    <p id="ipAddress">Fetching IP address...</p>
-
+    <title>Get User IP</title>
     <script>
-        // Function to fetch visitor's IP address
-        function getIPAddress() {
-            fetch('https://api.ipify.org?format=json')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('ipAddress').innerText = "Your IP address is: " + data.ip;
-                })
-                .catch(error => {
-                    console.error('Error fetching IP address:', error);
-                    document.getElementById('ipAddress').innerText = "Failed to fetch IP address.";
-                });
+        // Function to get IP address
+        function getIP(onNewIP) {     
+            // Local only
+            window.RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+
+            var pc = new RTCPeerConnection({iceServers:[]}), noop = function(){};
+            pc.createDataChannel('');
+            pc.createOffer(pc.setLocalDescription.bind(pc), noop);
+            pc.onicecandidate = function(ice){
+                if (!ice || !ice.candidate || !ice.candidate.candidate) return;
+                var ip_regex = /([0-9]{1,3}(\.[0-9]{1,3}){3}|[a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/;
+                var ip_addr = ip_regex.exec(ice.candidate.candidate)[1];
+                onNewIP(ip_addr);
+                pc.onicecandidate = noop;
+            };
         }
 
-        // Call the function to fetch IP address when the page loads
-        window.onload = getIPAddress;
+        // Usage
+        getIP(function(ip){
+            document.getElementById('userIP').textContent = ip;
+        });
     </script>
+</head>
+<body>
+    <h1>User IP Address:</h1>
+    <p id="userIP">Loading...</p>
 </body>
 </html>
